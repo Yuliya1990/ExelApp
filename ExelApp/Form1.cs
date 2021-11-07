@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.IO;
 
 namespace ExelApp
 {
@@ -66,16 +67,18 @@ namespace ExelApp
         }
         private void EnterBtn_Click(object sender, EventArgs e)
         {
-            string expression = textBox.Text;
-            if (expression == "")
-                return;
+  
+                string expression = textBox.Text;
+                if (expression == "")
+                    return;
 
-            int col = dataGridView1.SelectedCells[0].ColumnIndex;
-            int row = dataGridView1.SelectedCells[0].RowIndex;
+                int col = dataGridView1.SelectedCells[0].ColumnIndex;
+                int row = dataGridView1.SelectedCells[0].RowIndex;
 
-            GR.ChangeCell(row, col, expression, dataGridView1);
+                GR.ChangeCell(row, col, expression, dataGridView1);
 
-            dataGridView1[col, row].Value = GR.grid[row][col].Value;
+                dataGridView1[col, row].Value = GR.grid[row][col].Value;  
+                textBox.Text = GR.grid[row][col].Expression;
         }
         private void addToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -119,14 +122,70 @@ namespace ExelApp
         }
         private void addRowBtn_Click(object sender, EventArgs e)
         {
-            if(dataGridView1.Columns.Count == 0)
-            {
-                MessageBox.Show("There are no columns!");
-                return;
-            }
             DataGridViewRow row = new DataGridViewRow { Height = 28};
             dataGridView1.Rows.Add(row);
             GR.AddRow(dataGridView1);
+        }
+
+       private void deleteRowBtn_Click(object sender, EventArgs e)
+        {
+           int curRow = GR.RowCount - 1;
+            if (!GR.DeleteRow(dataGridView1, this))
+                return;
+            dataGridView1.Rows.RemoveAt(curRow);
+        }
+
+        private void addColumnBtn_Click(object sender, EventArgs e)
+        {
+            string colname = sys26.To26Sys(GR.ColCount);
+            dataGridView1.Columns.Add(colname, colname);
+            GR.AddColumn(dataGridView1);
+        }
+
+        private void deleteColumnBtn_Click(object sender, EventArgs e)
+        {
+            int curCol = GR.ColCount - 1;
+            if (!GR.DeleteCol(dataGridView1, this))
+                return;
+
+            dataGridView1.Columns.RemoveAt(curCol);
+        }
+
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "GridFile|*.txt";
+            saveFileDialog.Title = "Save Grid File";
+            saveFileDialog.ShowDialog();
+            if(saveFileDialog.FileName != "")
+            {
+                FileStream fs = (FileStream)saveFileDialog.OpenFile();
+                StreamWriter sw = new StreamWriter(fs);
+                GR.Save(sw);
+                sw.Close();
+                fs.Close();
+            }
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "DGridFile|*.txt";
+            openFileDialog.Title = "Select Grid File";
+
+            if (openFileDialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            StreamReader sr = new StreamReader(openFileDialog.FileName);
+            GR.Clear();
+            dataGridView1.Rows.Clear();
+            dataGridView1.Columns.Clear();
+            Int32.TryParse(sr.ReadLine(), out int row);
+            Int32.TryParse(sr.ReadLine(), out int col);
+
+            InitTable(row, col);
+            GR.Open(row, col, sr, dataGridView1);
+            sr.Close();
         }
     }
 }

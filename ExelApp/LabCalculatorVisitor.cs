@@ -15,7 +15,6 @@ namespace ExelApp
         {
             return Visit(context.expression());
         }
-
         public override double VisitNumberExpr(LabCalculatorParser.NumberExprContext context)
         {
             var result = double.Parse(context.GetText());
@@ -41,7 +40,6 @@ namespace ExelApp
         {
             return Visit(context.expression());
         }
-
         public override double VisitExponentialExpr(LabCalculatorParser.ExponentialExprContext context)
         {
             var left = WalkLeft(context);
@@ -50,7 +48,6 @@ namespace ExelApp
             Debug.WriteLine("{0} ^ {1}", left, right);
             return System.Math.Pow(left, right);
         }
-
         public override double VisitAdditiveExpr(LabCalculatorParser.AdditiveExprContext context)
         {
             var left = WalkLeft(context);
@@ -67,7 +64,6 @@ namespace ExelApp
                 return left - right;
             }
         }
-
         public override double VisitMultiplicativeExpr(LabCalculatorParser.MultiplicativeExprContext context)
         {
             var left = WalkLeft(context);
@@ -84,7 +80,6 @@ namespace ExelApp
                 return left / right;
             }
         }
-
         public override double VisitMaxExpr([NotNull] LabCalculatorParser.MaxExprContext context)
         {
             var left = WalkLeft(context);
@@ -99,7 +94,6 @@ namespace ExelApp
             Debug.WriteLine("min{0},{1}", left, right);
             return Math.Min(left, right);
         }
-
         public override double VisitModExpr([NotNull] LabCalculatorParser.ModExprContext context)
         {
             var left = WalkLeft(context);
@@ -112,7 +106,6 @@ namespace ExelApp
             var right = WalkRight(context);
             return (int)(left/right);
         }
-
         public override double VisitComparativeSevereExpr([NotNull] LabCalculatorParser.ComparativeSevereExprContext context)
         {
             var left = WalkLeft(context);
@@ -149,7 +142,6 @@ namespace ExelApp
                 else return 0;
             }
         }
-
         public override double VisitAssignmentExpr([NotNull] LabCalculatorParser.AssignmentExprContext context)
         {
             var left = WalkLeft(context);
@@ -168,7 +160,6 @@ namespace ExelApp
             }
             return base.VisitAssignmentExpr(context);
         }
-
         private double WalkLeft(LabCalculatorParser.ExpressionContext context)
         {
             return Visit(context.GetRuleContext<LabCalculatorParser.ExpressionContext>(0));

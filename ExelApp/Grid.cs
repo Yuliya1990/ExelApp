@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Text.RegularExpressions;
+using System.IO;
 
 namespace ExelApp
 {
@@ -12,7 +13,7 @@ namespace ExelApp
         public int ColCount;
         public int RowCount;
         private _26BasedSystem sys26 = new _26BasedSystem();
-        public Dictionary<string, string> dictionary = new Dictionary<string, string>();
+        public Dictionary<string, string> dictionary = new Dictionary<string, string>(); //Name - value
         public List<List<Cell>> grid = new List<List<Cell>>();
         public Grid()
         {
@@ -35,17 +36,6 @@ namespace ExelApp
                 grid.Add(newRow);
             }
         }
-        public void Clear()
-        {
-            foreach(List<Cell> list in grid)
-            {
-                list.Clear();
-            }
-            grid.Clear();
-            dictionary.Clear();
-            RowCount = 0;
-            ColCount = 0;
-        }
         public void AddRow(DataGridView dataGridView)
         {
             List<Cell> newRow = new List<Cell>();
@@ -56,51 +46,100 @@ namespace ExelApp
                 dictionary.Add(name, "");
             }
             grid.Add(newRow);
-
-            RowCount += 1;
+            RowCount ++;
             dataGridView.Rows[RowCount-1].HeaderCell.Value = (RowCount-1).ToString();
-            //  for (int i = 0; i < RowCount; i++)
-            // {
-            //   dataGridView.Rows[i].HeaderCell.Value = i.ToString();
-            //}
-
-            RefreshReferences();
-
-            foreach(List<Cell> list in grid)
+        }
+        public void AddColumn(DataGridView dataGridView)
+        {
+            for (int i=0; i<RowCount; i++)
             {
-                foreach(Cell cell in list)
+                string name = sys26.To26Sys(ColCount) + i.ToString();
+                grid[i].Add(new Cell(name, i, ColCount));
+                dictionary.Add(name, "");
+            }
+            ColCount++;
+        }
+        public bool DeleteRow(DataGridView dataGridView, Excel form)
+        {
+            if (RowCount == 0)
+                return false;
+            
+            DialogResult result = new DialogResult();
+            bool isResult = false;
+
+            foreach (Cell cell in grid[RowCount-1])
+            {
+                if (cell.DependfromMeCells.Count != 0)
                 {
-                    if (cell.IDependCells != null)
-                        foreach (Cell cell_in_ref in cell.IDependCells)// перебираю ячейки от кот я зависима
-                            if (cell_in_ref.RowIndex == RowCount - 1)// если ячейка от кот я зависима из посл строки, кот мы ща создаем
-                                if (!cell_in_ref.DependfromMeCells.Contains(cell))// если в ячейке от кот я зависимам в массиве зависящих от нее нет меня 
-                                    cell_in_ref.DependfromMeCells.Add(cell);
+                    result = MessageBox.Show("Do you really want to delete this row? All cells that depend on cells in this row will be cleared.", "Confirmation", MessageBoxButtons.YesNo);
+                    isResult = true;
+                    break;
                 }
             }
 
-            for (int i = 0; i < ColCount; i++)
-                ChangeCell(RowCount - 1, i, "", dataGridView);
-        }
+            if (isResult && result == DialogResult.No) //если не хотим удалять и нажали НЕТ
+                return false;
 
-        public void RefreshReferences()
-        {
-            foreach(List<Cell> list in grid)
-                foreach(Cell cell in list)
+            else //если нажали ДА (хотим удалить) или зависимых клеток не было
+            { 
+                foreach (Cell cell in grid[RowCount - 1])
                 {
-                    if (cell.IDependCells != null)
-                        cell.IDependCells.Clear();
-                    if (cell.New_IDependCells != null)
-                        cell.New_IDependCells.Clear();
-
-                    if (cell.Expression == "")
-                        continue;
-                    string new_expr = cell.Expression;
-                    if(cell.Expression[0]=='=')
+                    dictionary.Remove(cell.Name);
+                    foreach (Cell point in cell.DependfromMeCells)
                     {
-                        new_expr = ConvertReferences(cell.RowIndex, cell.ColIndex, cell.Expression);
-                        cell.IDependCells.AddRange(cell.New_IDependCells);
+                        RefreshCellAndPointers(point, dataGridView);
                     }
                 }
+                grid.Remove(grid[RowCount - 1]);
+            }
+            RowCount--;
+            return true;
+        }
+        public bool DeleteCol(DataGridView dataGridView, Excel form)
+        {
+            if (ColCount == 1)
+                return false;
+
+            DialogResult result = new DialogResult();
+            bool isResult = false;
+
+            for (int i = 0; i < RowCount; i++)
+            {
+                if (grid[i][ColCount-1].DependfromMeCells.Count !=0)
+                {
+                    result = MessageBox.Show("Do you really want to delete this column? All cells that depend on cells in this column will be cleared.", "Confirmation", MessageBoxButtons.YesNo);
+                    isResult = true;
+                    break;
+                }
+            }
+            if (isResult && result == DialogResult.No) //если не хотим удалять и нажали НЕТ
+                return false;
+
+            else //если нажали ДА (хотим удалить) или зависимых клеток не было
+            {
+               for (int i=0; i<RowCount; i++)
+                {
+                    dictionary.Remove(grid[i][ColCount - 1].Name);
+                    foreach (Cell point in grid[i][ColCount - 1].DependfromMeCells)
+                    {
+                        RefreshCellAndPointers(point, dataGridView);
+                    }
+                    grid[i].RemoveAt(ColCount - 1);
+                }
+            }
+            ColCount--;
+            return true;
+        }
+        public void Clear()
+        {
+            foreach (List<Cell> list in grid)
+            {
+                list.Clear();
+            }
+            grid.Clear();
+            dictionary.Clear();
+            RowCount = 0;
+            ColCount = 0;
         }
         public void ChangeCell(int row, int col, string expr, DataGridView dataGridView)
         {
@@ -122,19 +161,32 @@ namespace ExelApp
                 else
                 {
                     string new_expression = ConvertReferences(row, col, expr);
+
                     if (new_expression != "")
                         new_expression = new_expression.Remove(0, 1);
-                    //else return;
+                    else
+                    {
+                        MessageBox.Show("Contains non-existent cell!");
+                        grid[row][col].Expression = "#Error";
+                        grid[row][col].Value = "#Error";
+                        dictionary[grid[row][col].Name] = "#Error";
+
+                        foreach (Cell cell in grid[row][col].DependfromMeCells)
+                            RefreshCellAndPointers(cell, dataGridView);
+
+                        return;
+                    }
 
                     if (!grid[row][col].CheckForLoop(grid[row][col].New_IDependCells))
                     {
                         MessageBox.Show("There is a loop! Change the expression.");
+                        grid[row][col].Value = "#Loop";
                         return;
                     }
 
-                    grid[row][col].AddPointersAndReferences();
+                    grid[row][col].AddPointersAndReferences(); //если все ОК - обновляем IDependCells
                     value = Calculate(new_expression);
-                    if (value == "error")
+                    if (value == "Error")
                     {
                         MessageBox.Show("Error in cell " + grid[row][col].Name + "!");
                         return;
@@ -148,68 +200,87 @@ namespace ExelApp
                 }
             }
         }
-        public bool RefreshCellAndPointers(Cell cell, DataGridView dataGridView)
+        private bool RefreshCellAndPointers(Cell cell, DataGridView dataGridView)
         {
             cell.New_IDependCells.Clear();
             string new_expr = ConvertReferences(cell.RowIndex, cell.ColIndex, cell.Expression);
-            new_expr = new_expr.Remove(0, 1);
-            string value = Calculate(new_expr);
-            if(value=="error")
+
+            if (new_expr == "")
             {
-                MessageBox.Show("Error in cell" + cell.Name + '!');
-                return false;
+                cell.Expression = "#Error";
+                cell.Value = "#Error";
+                dictionary[cell.Name] = "#Error";
+
+                dataGridView[cell.ColIndex, cell.RowIndex].Value = cell.Value;
+
+                foreach (Cell point in cell.DependfromMeCells)
+                    RefreshCellAndPointers(point, dataGridView);
             }
-
-            grid[cell.RowIndex][cell.ColIndex].Value = value;
-            dictionary[grid[cell.ColIndex][cell.RowIndex].Name] = value;
-            dataGridView[cell.ColIndex, cell.RowIndex].Value = value;
-
-
-            foreach (Cell point in cell.DependfromMeCells)
+            else
             {
-                bool isOk = RefreshCellAndPointers(point, dataGridView);
-                if (!isOk)
+                new_expr = new_expr.Remove(0, 1);
+
+                string value = Calculate(new_expr);
+
+                if (value == "error")
+                {
+                    MessageBox.Show("Error in cell" + cell.Name + '!');
                     return false;
+                }
+
+                cell.Value = value;
+                dictionary[cell.Name] = value;
+                dataGridView[cell.ColIndex, cell.RowIndex].Value = value;
+
+                foreach (Cell point in cell.DependfromMeCells)
+                {
+                    bool isOk = RefreshCellAndPointers(point, dataGridView);
+                    if (!isOk)
+                        return false;
+                }
             }
 
             return true;
         }
-        public string ConvertReferences(int row, int col, string expr)
+        private string ConvertReferences(int row, int col, string expr)
         {
             string cellPattern = @"[A-Z]+[0-9]+";
-            Regex regex = new Regex(cellPattern, RegexOptions.IgnoreCase);
-            int[] nums;
-            foreach(Match match in regex.Matches(expr))// перебир все ячейки кот есть в моей формуле
-                if(dictionary.ContainsKey(match.Value))
+            Regex regex = new Regex(cellPattern, RegexOptions.IgnoreCase); //передается регулярное выражение CellPattern для поиска в expr
+            int[] nums; 
+            MatchCollection matches = regex.Matches(expr); // принимает строку expr, в которой надо найти имена клеток, и возвращает коллекцию найденных клеток
+            foreach (Match match in matches)// перебираем все клетки, что нашли
+                if(dictionary.ContainsKey(match.Value)) //если имя клетки есть в dictionary
                 {
-                    nums = sys26.From26Sys(match.Value);
-                    if (nums[1] < grid.Count && nums[0] < grid[nums[1]].Count)// если строки-столбца на кот мы ссылаемся пока нет, то и яч не добавится
-                        grid[row][col].New_IDependCells.Add(grid[nums[1]][nums[0]]);// наполняем массив клеток от кот зависима текущая клетка
+                    nums = sys26.From26Sys(match.Value); //конвертируем имя клетки в индексы (колонка, ряд)
+                    grid[row][col].New_IDependCells.Add(grid[nums[1]][nums[0]]);// наполняем буферный массив клеток от кот зависима текущая клетка
                 }
-
+                else
+                {
+                    return "";
+                }
 
             MatchEvaluator myEvaluator = new MatchEvaluator(RefToValue);
             string new_expression = regex.Replace(expr, myEvaluator);
             return new_expression;
         }
-        public string RefToValue(Match m)
+        private string RefToValue(Match m)
         {
-            if (dictionary.ContainsKey(m.Value))
-            {
-                if (dictionary[m.Value] == "")
-                    return "0";
-                else
-                    return dictionary[m.Value];
-            }
+            if (dictionary[m.Value] == "" || dictionary[m.Value] == "#Error")
+                return "0";
             else
-                return m.Value;
+                return dictionary[m.Value];
         }
-        public string Calculate(string expr)
+        private string Calculate(string expr)
         {
             string res = null;
             try
             {
                 res = Convert.ToString(Calculator.Evaluate(expr));
+                if (res == "∞")
+                {
+                    MessageBox.Show("Division by zero error");
+                    res = "#Division by zero";
+                }
                 return res;
             }
             catch
@@ -217,7 +288,74 @@ namespace ExelApp
                 return "Error";
             }
         }
+        public void Save(StreamWriter sw)
+        {
+            sw.WriteLine(RowCount);
+            sw.WriteLine(ColCount);
+            foreach (List<Cell> list in grid)
+            {
+                foreach(Cell cell in list)
+                {
+                    sw.WriteLine(cell.Name);
+                    sw.WriteLine(cell.Expression);
+                    sw.WriteLine(cell.Value);
 
+                    if (cell.IDependCells == null)
+                        sw.WriteLine(0);
+                    else
+                    {
+                        sw.WriteLine(cell.IDependCells.Count);
+                        foreach (Cell point in cell.IDependCells)
+                            sw.WriteLine(point.Name);
+                    }
+                    if(cell.DependfromMeCells==null)
+                        sw.WriteLine(0);
+                    else
+                    {
+                        sw.WriteLine(cell.DependfromMeCells.Count);
+                        foreach (Cell point in cell.DependfromMeCells)
+                            sw.WriteLine(point.Name);
+                    }
+                }
+            }
+        }
+        public void Open(int row, int col, StreamReader sr, DataGridView dataGridView)
+        {
+            for (int r = 0; r < row; r++)
+            {
+                for(int c = 0; c < col; c++)
+                {
+                    string name = sr.ReadLine();
+                    string expr = sr.ReadLine();
+                    string value = sr.ReadLine();
+                    if (expr != "")
+                        dictionary[name] = value;
+                    else
+                        dictionary[name] = "";
 
+                    int iDepCount = Convert.ToInt32(sr.ReadLine());
+                    List<Cell> newIDep = new List<Cell>();
+                    string iDep;
+                    for (int i=0; i<iDepCount; i++)
+                    {
+                        iDep = sr.ReadLine();
+                        newIDep.Add(grid[sys26.From26Sys(iDep)[1]][sys26.From26Sys(iDep)[0]]);
+                    }
+
+                    int depFromMeCount = Convert.ToInt32(sr.ReadLine());
+                    List<Cell> newDepFromMe = new List<Cell>();
+                    string depFromMe;
+                    for (int i=0; i<depFromMeCount; i++)
+                    {
+                        depFromMe = sr.ReadLine();
+                        newDepFromMe.Add(grid[sys26.From26Sys(depFromMe)[1]][sys26.From26Sys(depFromMe)[0]]);
+                    }
+                    grid[r][c].SetCell(value, expr, newIDep, newDepFromMe);
+                    int icol = grid[r][c].ColIndex;
+                    int irow = grid[r][c].RowIndex;
+                    dataGridView[icol, irow].Value = dictionary[name];
+                }
+            }
+        }
     }
 }

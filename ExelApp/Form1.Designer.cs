@@ -32,7 +32,6 @@ namespace ExelApp
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.File = new System.Windows.Forms.ToolStripMenuItem();
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.saveAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutProgramToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -69,7 +68,6 @@ namespace ExelApp
             // 
             this.File.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.saveToolStripMenuItem,
-            this.saveAsToolStripMenuItem,
             this.openToolStripMenuItem});
             this.File.Name = "File";
             this.File.Size = new System.Drawing.Size(54, 29);
@@ -79,20 +77,16 @@ namespace ExelApp
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(185, 34);
-            this.saveToolStripMenuItem.Text = "Save";
-            // 
-            // saveAsToolStripMenuItem
-            // 
-            this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(185, 34);
-            this.saveAsToolStripMenuItem.Text = "Save as...";
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(270, 34);
+            this.saveToolStripMenuItem.Text = "Save as...";
+            this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
             // 
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(185, 34);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(270, 34);
             this.openToolStripMenuItem.Text = "Open...";
+            this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -111,6 +105,7 @@ namespace ExelApp
             // 
             // dataGridView1
             // 
+            this.dataGridView1.AllowUserToAddRows = false;
             this.dataGridView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
@@ -177,6 +172,7 @@ namespace ExelApp
             this.deleteRowBtn.TabIndex = 7;
             this.deleteRowBtn.Text = "-";
             this.deleteRowBtn.UseVisualStyleBackColor = true;
+            this.deleteRowBtn.Click += new System.EventHandler(this.deleteRowBtn_Click);
             // 
             // labelColumn
             // 
@@ -197,6 +193,7 @@ namespace ExelApp
             this.addColumnBtn.TabIndex = 9;
             this.addColumnBtn.Text = "+";
             this.addColumnBtn.UseVisualStyleBackColor = true;
+            this.addColumnBtn.Click += new System.EventHandler(this.addColumnBtn_Click);
             // 
             // deleteColumnBtn
             // 
@@ -207,6 +204,7 @@ namespace ExelApp
             this.deleteColumnBtn.TabIndex = 10;
             this.deleteColumnBtn.Text = "-";
             this.deleteColumnBtn.UseVisualStyleBackColor = true;
+            this.deleteColumnBtn.Click += new System.EventHandler(this.deleteColumnBtn_Click);
             // 
             // Excel
             // 
@@ -243,7 +241,6 @@ namespace ExelApp
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem File;
         private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem saveAsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.DataGridView dataGridView1;
