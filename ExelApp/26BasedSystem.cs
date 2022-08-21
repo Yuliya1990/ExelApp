@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ExelApp
 {
-    class _26BasedSystem
+    public class _26BasedSystem
     {
         public string To26Sys(int i)
         {

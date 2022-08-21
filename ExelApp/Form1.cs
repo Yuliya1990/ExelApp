@@ -13,8 +13,8 @@ namespace ExelApp
 {
     public partial class Excel : Form
     {
-        Grid GR = new Grid();
-        _26BasedSystem sys26 = new _26BasedSystem();
+        private Grid GR = new Grid();
+        private _26BasedSystem sys26 = new _26BasedSystem();
         public Excel()
         {
             InitializeComponent();
@@ -35,7 +35,6 @@ namespace ExelApp
                 dataGridView1.Rows[i].HeaderCell.Value = i.ToString();
                 dataGridView1.Rows[i].Height = 28;
             }
-            GR.SetGrid(rowCount, colCount);
         }
         private void Exel_Load(object sender, EventArgs e)
         {

@@ -258,7 +258,6 @@ namespace ExelApp
                 {
                     return "";
                 }
-
             MatchEvaluator myEvaluator = new MatchEvaluator(RefToValue);
             string new_expression = regex.Replace(expr, myEvaluator);
             return new_expression;
