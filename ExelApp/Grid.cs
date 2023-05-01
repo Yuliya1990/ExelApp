@@ -46,12 +46,12 @@ namespace ExelApp
                 dictionary.Add(name, "");
             }
             grid.Add(newRow);
-            RowCount ++;
-            dataGridView.Rows[RowCount-1].HeaderCell.Value = (RowCount-1).ToString();
+            RowCount++;
+            dataGridView.Rows[RowCount - 1].HeaderCell.Value = (RowCount - 1).ToString();
         }
         public void AddColumn(DataGridView dataGridView)
         {
-            for (int i=0; i<RowCount; i++)
+            for (int i = 0; i < RowCount; i++)
             {
                 string name = sys26.To26Sys(ColCount) + i.ToString();
                 grid[i].Add(new Cell(name, i, ColCount));
@@ -63,11 +63,11 @@ namespace ExelApp
         {
             if (RowCount == 0)
                 return false;
-            
+
             DialogResult result = new DialogResult();
             bool isResult = false;
 
-            foreach (Cell cell in grid[RowCount-1])
+            foreach (Cell cell in grid[RowCount - 1])
             {
                 if (cell.DependfromMeCells.Count != 0)
                 {
@@ -81,7 +81,7 @@ namespace ExelApp
                 return false;
 
             else //если нажали ДА (хотим удалить) или зависимых клеток не было
-            { 
+            {
                 foreach (Cell cell in grid[RowCount - 1])
                 {
                     dictionary.Remove(cell.Name);
@@ -105,7 +105,7 @@ namespace ExelApp
 
             for (int i = 0; i < RowCount; i++)
             {
-                if (grid[i][ColCount-1].DependfromMeCells.Count !=0)
+                if (grid[i][ColCount - 1].DependfromMeCells.Count != 0)
                 {
                     result = MessageBox.Show("Do you really want to delete this column? All cells that depend on cells in this column will be cleared.", "Confirmation", MessageBoxButtons.YesNo);
                     isResult = true;
@@ -117,7 +117,7 @@ namespace ExelApp
 
             else //если нажали ДА (хотим удалить) или зависимых клеток не было
             {
-               for (int i=0; i<RowCount; i++)
+                for (int i = 0; i < RowCount; i++)
                 {
                     dictionary.Remove(grid[i][ColCount - 1].Name);
                     foreach (Cell point in grid[i][ColCount - 1].DependfromMeCells)
@@ -160,43 +160,51 @@ namespace ExelApp
                 }
                 else
                 {
-                    string new_expression = ConvertReferences(row, col, expr);
-
-                    if (new_expression != "")
-                        new_expression = new_expression.Remove(0, 1);
-                    else
+                    try
                     {
-                        MessageBox.Show("Contains non-existent cell!");
-                        grid[row][col].Expression = "#Error";
-                        grid[row][col].Value = "#Error";
-                        dictionary[grid[row][col].Name] = "#Error";
+                        string new_expression = ConvertReferences(row, col, expr);
+
+                        if (new_expression != "")
+                            new_expression = new_expression.Remove(0, 1);
+                        else
+                        {
+                            MessageBox.Show("Contains non-existent cell!");
+                            grid[row][col].Expression = "#Error";
+                            grid[row][col].Value = "#Error";
+                            dictionary[grid[row][col].Name] = "#Error";
+
+                            foreach (Cell cell in grid[row][col].DependfromMeCells)
+                                RefreshCellAndPointers(cell, dataGridView);
+                            throw new Exception("Contain  non-existent cell!");
+                        }
+
+
+                        if (!grid[row][col].CheckForLoop(grid[row][col].New_IDependCells))
+                        {
+                            MessageBox.Show("There is a loop! Change the expression.");
+                            grid[row][col].Value = "#Loop";
+                            throw new Exception("There is a loop! Change the expression.");
+                        }
+
+                        grid[row][col].AddPointersAndReferences(); //если все ОК - обновляем IDependCells
+                        value = Calculate(new_expression);
+                        if (value == "Error")
+                        {
+                            MessageBox.Show("Error in cell " + grid[row][col].Name + "!");
+                            throw new Exception("Error in cell " + grid[row][col].Name + "!");
+                        }
+
+                        grid[row][col].Value = value;
+                        dictionary[grid[row][col].Name] = value;
 
                         foreach (Cell cell in grid[row][col].DependfromMeCells)
                             RefreshCellAndPointers(cell, dataGridView);
 
-                        return;
                     }
-
-                    if (!grid[row][col].CheckForLoop(grid[row][col].New_IDependCells))
+                    catch (Exception ex)
                     {
-                        MessageBox.Show("There is a loop! Change the expression.");
-                        grid[row][col].Value = "#Loop";
                         return;
                     }
-
-                    grid[row][col].AddPointersAndReferences(); //если все ОК - обновляем IDependCells
-                    value = Calculate(new_expression);
-                    if (value == "Error")
-                    {
-                        MessageBox.Show("Error in cell " + grid[row][col].Name + "!");
-                        return;
-                    }
-
-                    grid[row][col].Value = value;
-                    dictionary[grid[row][col].Name] = value;
-
-                    foreach (Cell cell in grid[row][col].DependfromMeCells)
-                        RefreshCellAndPointers(cell, dataGridView);
                 }
             }
         }
@@ -219,9 +227,24 @@ namespace ExelApp
             else
             {
                 new_expr = new_expr.Remove(0, 1);
-
-                string value = Calculate(new_expr);
-
+                string value = "";
+                try
+                {
+                    value = Calculate(new_expr);
+                }
+                catch (DivideByZeroException ex)
+                {
+                    value = ex.Message;
+                }
+                catch (Exception ex)
+                {
+                    value = "Error";
+                }
+                if (value == "Division by zero error")
+                {
+                    MessageBox.Show("Division by zero error");
+                    return false;
+                }
                 if (value == "error")
                 {
                     MessageBox.Show("Error in cell" + cell.Name + '!');
@@ -242,14 +265,22 @@ namespace ExelApp
 
             return true;
         }
-        private string ConvertReferences(int row, int col, string expr)
+
+
+        public MatchCollection FindAllCells(string expr)
         {
             string cellPattern = @"[A-Z]+[0-9]+";
             Regex regex = new Regex(cellPattern, RegexOptions.IgnoreCase); //передается регулярное выражение CellPattern для поиска в expr
-            int[] nums; 
             MatchCollection matches = regex.Matches(expr); // принимает строку expr, в которой надо найти имена клеток, и возвращает коллекцию найденных клеток
+            return matches;
+        }
+
+        private string ConvertReferences(int row, int col, string expr)
+        {
+            var matches = FindAllCells(expr);
+            int[] nums;
             foreach (Match match in matches)// перебираем все клетки, что нашли
-                if(dictionary.ContainsKey(match.Value)) //если имя клетки есть в dictionary
+                if (dictionary.ContainsKey(match.Value)) //если имя клетки есть в dictionary
                 {
                     nums = sys26.From26Sys(match.Value); //конвертируем имя клетки в индексы (колонка, ряд)
                     grid[row][col].New_IDependCells.Add(grid[nums[1]][nums[0]]);// наполняем буферный массив клеток от кот зависима текущая клетка
@@ -259,6 +290,8 @@ namespace ExelApp
                     return "";
                 }
             MatchEvaluator myEvaluator = new MatchEvaluator(RefToValue);
+            string cellPattern = @"[A-Z]+[0-9]+";
+            Regex regex = new Regex(cellPattern, RegexOptions.IgnoreCase);
             string new_expression = regex.Replace(expr, myEvaluator);
             return new_expression;
         }
@@ -269,23 +302,18 @@ namespace ExelApp
             else
                 return dictionary[m.Value];
         }
-        private string Calculate(string expr)
+        public string Calculate(string expr)
         {
             string res = null;
-            try
-            {
-                res = Convert.ToString(Calculator.Evaluate(expr));
-                if (res == "∞")
+
+            res = Convert.ToString(Calculator.Evaluate(expr));
+            if (res == "∞" || res=="-2147483648")
                 {
-                    MessageBox.Show("Division by zero error");
-                    res = "#Division by zero";
+                    throw new DivideByZeroException("Division by zero error");
                 }
                 return res;
-            }
-            catch
-            {
-                return "Error";
-            }
+            
+           
         }
         public void Save(StreamWriter sw)
         {

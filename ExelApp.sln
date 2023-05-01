@@ -1,11 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31702.278
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32407.343
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExelApp", "ExelApp\ExelApp.csproj", "{39DF2A99-BF13-4AC8-9A82-91E7325C858C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestExcel", "TestExcel\TestExcel.csproj", "{4178C292-CE31-4304-B6C3-CC7B0A07859D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestNUnit", "TestNUnit\TestNUnit.csproj", "{6E954A67-AC30-4F72-8849-80B0361917D7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{39DF2A99-BF13-4AC8-9A82-91E7325C858C} = {39DF2A99-BF13-4AC8-9A82-91E7325C858C}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +26,10 @@ Global
 		{4178C292-CE31-4304-B6C3-CC7B0A07859D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4178C292-CE31-4304-B6C3-CC7B0A07859D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4178C292-CE31-4304-B6C3-CC7B0A07859D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E954A67-AC30-4F72-8849-80B0361917D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E954A67-AC30-4F72-8849-80B0361917D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E954A67-AC30-4F72-8849-80B0361917D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E954A67-AC30-4F72-8849-80B0361917D7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

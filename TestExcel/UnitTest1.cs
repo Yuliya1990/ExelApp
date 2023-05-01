@@ -95,18 +95,5 @@ namespace TestExcel
             string expected = "∞";
             Assert.AreEqual(expected, res);
         }
-        public void TestModByZero()
-        {
-            string res = Convert.ToString(Calculator.Evaluate("5 mod 0"));
-            string expected = "∞";
-            Assert.AreEqual(expected, res);
-        }
-        public void DivByZero()
-        {
-            string res = Convert.ToString(Calculator.Evaluate("5 div 0"));
-            string expected = "∞";
-            Assert.AreEqual(expected, res);
-        }
-
     }
 }
